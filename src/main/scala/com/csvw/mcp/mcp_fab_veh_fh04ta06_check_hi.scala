@@ -2,7 +2,7 @@ package com.csvw.mcp
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-object mcp_fab_veh_fh04ta06_check_hour {
+object mcp_fab_veh_fh04ta06_check_hi {
   def main(args: Array[String]): Unit = {
     // 开始日期
     val bizdate = args(0)
@@ -59,7 +59,7 @@ object mcp_fab_veh_fh04ta06_check_hour {
     // 输出到hive
     sparkHive.sql(
       """
-        | insert overwrite table mcp.mcp_fab_veh_fh04ta06_check_hour partition (werk, cal_date)
+        | insert overwrite table mcp.mcp_fab_veh_fh04ta06_check_hi partition (werk, cal_date)
         |	SELECT
         |		t1.plant
         |		,t2.vin

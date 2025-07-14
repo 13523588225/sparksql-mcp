@@ -2,7 +2,7 @@ package com.csvw.mcp
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-object mcp_fab_veh_fh01t04_hour {
+object mcp_fab_veh_fh01t04_hi {
   def main(args: Array[String]): Unit = {
 
     val sparkKudu: SparkSession = SparkSession.builder().getOrCreate()
@@ -10,106 +10,63 @@ object mcp_fab_veh_fh01t04_hour {
     // 替换为实际 Kudu Master 地址
     val kuduMaster = "bigdata-09.csvw.com:7051,bigdata-08.csvw.com:7051,bigdata-10.csvw.com:7051"
 
-    val cpy_fh01t04 = "ods.fab_fis_90068_rpt_cpy_fh01t04_nt_streaming"
-    val meb_fh01t04 = "ods.fab_fis_90103_rpt_meb_fh01t04_nt_streaming"
-    val cpn_fh01t04 = "ods.fab_fis_90114_rpt_cpn_fh01t04_nt_streaming"
-    val cph_fh01t04 = "ods.fab_fis_90152_rpt_cph_fh01t04_nt_streaming"
-    val cpc_fh01t04 = "ods.fab_fis_90175_rpt_cpc_fh01t04_nt_streaming"
-    val cpy_fh01t01 = "ods.fab_fis_90066_rpt_cpy_fh01t01_nt_streaming"
-    val meb_fh01t01 = "ods.fab_fis_90102_rpt_meb_fh01t01_nt_streaming"
-    val cpn_fh01t01 = "ods.fab_fis_90112_rpt_cpn_fh01t01_nt_streaming"
-    val cph_fh01t01 = "ods.fab_fis_90150_rpt_cph_fh01t01_nt_streaming"
-    val cpc_fh01t01 = "ods.fab_fis_90173_rpt_cpc_fh01t01_nt_streaming"
-    val meb_fh01t05 = "ods.fab_fis_90104_rpt_meb_fh01t05_nt_streaming"
-    val cpn_fh01t05 = "ods.fab_fis_90115_rpt_cpn_fh01t05_nt_streaming"
+    val tablelist_fh01t04 = Map(
+      "cpy_fh01t04" -> "ods.fab_fis_90068_rpt_cpy_fh01t04_nt_streaming",
+      "meb_fh01t04" -> "ods.fab_fis_90103_rpt_meb_fh01t04_nt_streaming",
+      "meb_fh01t04" -> "ods.fab_fis_90114_rpt_cpn_fh01t04_nt_streaming",
+      "cph_fh01t04" -> "ods.fab_fis_90152_rpt_cph_fh01t04_nt_streaming",
+      "cpc_fh01t04" -> "ods.fab_fis_90175_rpt_cpc_fh01t04_nt_streaming"
+    )
     // TO4表增加过滤条件
     val filter_t04 = "substr(knr1,3,1) != '9' " +
       "and status0 IN ('A700','R700','L000','L800','M7X0','R100','L100','L500','M100','R500'," +
-      "'V900','Z700','Z900','Z897','Z898','Z89X','M795','M800','M810','Q800','Q801','Z800','R500','R480','L480','Q710','Q705')"
+      "'V900','Z700','Z900','Z897','Z898','Z89X','M795','M800','M810','Q800','Q801','Z800','R480','L480','Q710','Q705')"
 
-    // 读取 Kudu 表数据
-    val kuduDF: DataFrame = sparkKudu.read.format("org.apache.kudu.spark.kudu")
-      .option("kudu.table", cpy_fh01t04)
-      .option("kudu.master", kuduMaster)
-      .load().filter(filter_t04)
-    kuduDF.createOrReplaceTempView("cpy_fh01t04")
+    // 动态注册所有表
+    tablelist_fh01t04.map { case (targetTable, sourceTable) =>
+      val df = sparkKudu.read
+        .format("org.apache.kudu.spark.kudu")
+        .option("kudu.master", kuduMaster)
+        .option("kudu.table", sourceTable)
+        .load()
+        .filter(filter_t04)
 
-    val kuduDF2: DataFrame = sparkKudu.read.format("org.apache.kudu.spark.kudu")
-      .option("kudu.table", meb_fh01t04)
-      .option("kudu.master", kuduMaster)
-      .load().filter(filter_t04)
-    kuduDF2.createOrReplaceTempView("meb_fh01t04")
+      df.createOrReplaceTempView(targetTable)
+      println(s"已注册表: $targetTable (来源: $sourceTable)")
 
-    val kuduDF3: DataFrame = sparkKudu.read.format("org.apache.kudu.spark.kudu")
-      .option("kudu.table", cpn_fh01t04)
-      .option("kudu.master", kuduMaster)
-      .load().filter(filter_t04)
-    kuduDF3.createOrReplaceTempView("cpn_fh01t04")
+      // 返回表名和DataFrame的映射
+      (targetTable, df)
+    }
 
-    val kuduDF4: DataFrame = sparkKudu.read.format("org.apache.kudu.spark.kudu")
-      .option("kudu.table", cph_fh01t04)
-      .option("kudu.master", kuduMaster)
-      .load().filter(filter_t04)
-    kuduDF4.createOrReplaceTempView("cph_fh01t04")
+    val tablelist_fis = Map(
+      "cpy_fh01t01" -> "ods.fab_fis_90066_rpt_cpy_fh01t01_nt_streaming",
+      "meb_fh01t01" -> "ods.fab_fis_90102_rpt_meb_fh01t01_nt_streaming",
+      "cpn_fh01t01" -> "ods.fab_fis_90112_rpt_cpn_fh01t01_nt_streaming",
+      "cph_fh01t01" -> "ods.fab_fis_90150_rpt_cph_fh01t01_nt_streaming",
+      "cpc_fh01t01" -> "ods.fab_fis_90173_rpt_cpc_fh01t01_nt_streaming",
+      "meb_fh01t05" -> "ods.fab_fis_90104_rpt_meb_fh01t05_nt_streaming",
+      "cpn_fh01t05" -> "ods.fab_fis_90115_rpt_cpn_fh01t05_nt_streaming"
+    )
 
-    val kuduDF5: DataFrame = sparkKudu.read.format("org.apache.kudu.spark.kudu")
-      .option("kudu.table", cpc_fh01t04)
-      .option("kudu.master", kuduMaster)
-      .load().filter(filter_t04)
-    kuduDF5.createOrReplaceTempView("cpc_fh01t04")
+    // 动态注册所有表
+    tablelist_fis.map { case (targetTable, sourceTable) =>
+      val df = sparkKudu.read
+        .format("org.apache.kudu.spark.kudu")
+        .option("kudu.master", kuduMaster)
+        .option("kudu.table", sourceTable)
+        .load()
 
-    val kuduDF6: DataFrame = sparkKudu.read.format("org.apache.kudu.spark.kudu")
-      .option("kudu.table", cpy_fh01t01)
-      .option("kudu.master", kuduMaster)
-      .load()
-    kuduDF6.createOrReplaceTempView("cpy_fh01t01")
+      df.createOrReplaceTempView(targetTable)
+      println(s"已注册表: $targetTable (来源: $sourceTable)")
 
-    val kuduDF7: DataFrame = sparkKudu.read.format("org.apache.kudu.spark.kudu")
-      .option("kudu.table", meb_fh01t01)
-      .option("kudu.master", kuduMaster)
-      .load()
-    kuduDF7.createOrReplaceTempView("meb_fh01t01")
-
-    val kuduDF8: DataFrame = sparkKudu.read.format("org.apache.kudu.spark.kudu")
-      .option("kudu.table", cpn_fh01t01)
-      .option("kudu.master", kuduMaster)
-      .load()
-    kuduDF8.createOrReplaceTempView("cpn_fh01t01")
-
-    val kuduDF9: DataFrame = sparkKudu.read.format("org.apache.kudu.spark.kudu")
-      .option("kudu.table", cph_fh01t01)
-      .option("kudu.master", kuduMaster)
-      .load()
-    kuduDF9.createOrReplaceTempView("cph_fh01t01")
-
-    val kuduDF10: DataFrame = sparkKudu.read.format("org.apache.kudu.spark.kudu")
-      .option("kudu.table", cpc_fh01t01)
-      .option("kudu.master", kuduMaster)
-      .load()
-    kuduDF10.createOrReplaceTempView("cpc_fh01t01")
-
-    val kuduDF11: DataFrame = sparkKudu.read.format("org.apache.kudu.spark.kudu")
-      .option("kudu.table", meb_fh01t05)
-      .option("kudu.master", kuduMaster)
-      .load()
-    kuduDF11.createOrReplaceTempView("meb_fh01t05")
-
-    val kuduDF12: DataFrame = sparkKudu.read.format("org.apache.kudu.spark.kudu")
-      .option("kudu.table", cpn_fh01t05)
-      .option("kudu.master", kuduMaster)
-      .load()
-    kuduDF12.createOrReplaceTempView("cpn_fh01t05")
-
-    val sparkHive: SparkSession = SparkSession.builder()
-      .appName("SparkSQL Kudu Hive Opration Demo")
-      .config("spark.sql.warehouse.dir", "/user/hive/warehouse")
-      .enableHiveSupport()
-      .getOrCreate()
+      // 返回表名和DataFrame的映射
+      (targetTable, df)
+    }
 
     // 输出到hive
-    sparkHive.sql(
+    sparkKudu.sql(
       """
-insert overwrite table mcp.mcp_fab_veh_fh01t04_hour
+        |insert overwrite table mcp.mcp_fab_veh_fh01t04_hi
         |select
         |	vin,
         |	werk,
@@ -435,7 +392,7 @@ insert overwrite table mcp.mcp_fab_veh_fh01t04_hour
         |"""
         .stripMargin)
     println("---------计算完成--------")
+
     sparkKudu.stop()
-    sparkHive.stop()
   }
 }

@@ -1,57 +1,45 @@
-package com.csvw.mcp
+package com.csvw.demo
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 object mcp_fab_veh_fh01tqa5_hour {
   def main(args: Array[String]): Unit = {
+
     // 开始日期
-    val bizdate = args(0)
-    println(s"开始日期: $bizdate")
+    val dt = args(0)
+    println(s"开始日期: $dt")
 
     val sparkKudu: SparkSession = SparkSession.builder().getOrCreate()
 
     // 替换为实际 Kudu Master 地址
     val kuduMaster = "bigdata-09.csvw.com:7051,bigdata-08.csvw.com:7051,bigdata-10.csvw.com:7051"
 
-    val cpy_fh01tqa5 = "ods.fab_fis_90069_rpt_cpy_fh01tqa5_nt_streaming"
-    val meb_fh01tqa5 = "ods.fab_fis_90091_rpt_meb_fh01tqa5_nt_streaming"
-    val cph_fh01tqa5 = "ods.fab_fis_90139_rpt_cph_fh01tqa5_nt_streaming"
-    val cpc_fh01tqa5 = "ods.fab_fis_90163_rpt_cpc_fh01tqa5_nt_streaming"
+    val tablelist = Map(
+      "cpy_fh01tqa5" -> "ods.fab_fis_90069_rpt_cpy_fh01tqa5_nt_streaming",
+      "meb_fh01tqa5" -> "ods.fab_fis_90091_rpt_meb_fh01tqa5_nt_streaming",
+      "cph_fh01tqa5" -> "ods.fab_fis_90139_rpt_cph_fh01tqa5_nt_streaming",
+      "cpc_fh01tqa5" -> "ods.fab_fis_90163_rpt_cpc_fh01tqa5_nt_streaming"
+    )
 
-    // 读取 Kudu 表数据
-    val kuduDF: DataFrame = sparkKudu.read.format("org.apache.kudu.spark.kudu")
-      .option("kudu.table", cpy_fh01tqa5)
-      .option("kudu.master", kuduMaster)
-      .load()
-    kuduDF.createOrReplaceTempView("cpy_fh01tqa5")
+    // 动态注册所有表
+    tablelist.map { case (targetTable, sourceTable) =>
+      val df = sparkKudu.read
+        .format("org.apache.kudu.spark.kudu")
+        .option("kudu.master", kuduMaster)
+        .option("kudu.table", sourceTable)
+        .load()
+        .filter(s"station_ts >= '${dt}'")
 
-    val kuduDF2: DataFrame = sparkKudu.read.format("org.apache.kudu.spark.kudu")
-      .option("kudu.table", meb_fh01tqa5)
-      .option("kudu.master", kuduMaster)
-      .load()
-    kuduDF2.createOrReplaceTempView("meb_fh01tqa5")
+      df.createOrReplaceTempView(targetTable)
+      println(s"已注册表: $targetTable (来源: $sourceTable)")
 
-    val kuduDF3: DataFrame = sparkKudu.read.format("org.apache.kudu.spark.kudu")
-      .option("kudu.table", cph_fh01tqa5)
-      .option("kudu.master", kuduMaster)
-      .load()
-    kuduDF3.createOrReplaceTempView("cph_fh01tqa5")
+      // 返回表名和DataFrame的映射
+      (targetTable, df)
+    }
 
-    val kuduDF4: DataFrame = sparkKudu.read.format("org.apache.kudu.spark.kudu")
-      .option("kudu.table", cpc_fh01tqa5)
-      .option("kudu.master", kuduMaster)
-      .load()
-    kuduDF4.createOrReplaceTempView("cpc_fh01tqa5")
-
-    val sparkHive: SparkSession = SparkSession.builder()
-      .appName("SparkSQL Kudu Hive Opration Demo")
-      .config("spark.sql.warehouse.dir", "/user/hive/warehouse")
-      .enableHiveSupport()
-      .getOrCreate()
-
-    // 输出到hive
-    sparkHive.sql(
-      s"""
+    // 执行多表计算
+    val sql: String =
+      """
         |insert overwrite table mcp.mcp_fab_veh_fh01tqa5_hour
         |select
         |   werk,
@@ -133,10 +121,11 @@ object mcp_fab_veh_fh01tqa5_hour {
         |		ROW_NUMBER() over(PARTITION by werk, spj, kanr, module order by station_ts desc) rn
         |	from cpc_fh01tqa5
         |) a where meldekz not in ('HV','AV','HA') and rn = 1
-        |"""
-        .stripMargin)
+        |""".stripMargin
+
+    // 输出到hive
+    sparkKudu.sql(sql)
 
     sparkKudu.stop()
-    sparkHive.stop()
   }
 }

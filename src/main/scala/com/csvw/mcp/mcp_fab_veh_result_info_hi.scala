@@ -4,7 +4,7 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 
 import java.text.SimpleDateFormat
 
-object mcp_fab_veh_result_info_hour {
+object mcp_fab_veh_result_info_hi {
   def main(args: Array[String]): Unit = {
 
     // 开始日期
@@ -116,7 +116,7 @@ object mcp_fab_veh_result_info_hour {
     // 输出到hive
     sparkHive.sql(
       s"""
-         |	insert overwrite table mcp.mcp_fab_veh_result_info_hour partition (werk, cal_date)
+         |	insert overwrite table mcp.mcp_fab_veh_result_info_hi partition (werk, cal_date)
          |	-- CPC
          |	select distinct
          |		t4.plant,
