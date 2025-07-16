@@ -107,6 +107,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |				case when check_value_id <> '4' then 1 end HG
         |			from mcp.mcp_fab_veh_fh04ta06_check_hi
         |			where plant IN ('CPM','CPH2','CPC','CPY')
+        |     and plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd'), 'yyyy-MM-dd')
         |		) t
         |		where checkpoint is not null
         |		union all
@@ -160,6 +161,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |			and result_name = '000800'
         |			and msr_value_id in ('110','150','510','520')
         |			and plant is not null
+        |     and plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd'), 'yyyy-MM-dd')
         |		) t
         |		where checkpoint is not null
         |		union all
@@ -199,6 +201,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |			and result_name = '000800'
         |			and msr_value_id = '700'
         |			and plant in ('CPY','CPC','CPA3','CPH2')
+        |     and plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd'), 'yyyy-MM-dd')
         |		) t
         |		union all
         |		select
@@ -231,9 +234,10 @@ object mcp_fab_veh_dlq_detail_hi {
         |				null BHG,
         |				1 ZS,
         |				ROW_NUMBER() over(PARTITION by werk, spj, kanr, CAL_DATE order by mdatumzeit) rn
-        |			FROM mcp.mcp_fab_veh_fh01t04_hi
+        |			FROM mcp.mcp_fab_veh_fh01t04_hf
         |			WHERE plant in ('CPA2','CPM')
-        |				AND status0 = 'Z700'
+        |			and status0 = 'Z700'
+        |     and CAL_DATE >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd'), 'yyyy-MM-dd')
         |			union all
         |			--2.2 CPA2 CPM 不合格
         |			select
@@ -262,7 +266,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |					b.kanr
         |				from
         |				(
-        |					select * from mcp.mcp_fab_veh_fh01t04_hi
+        |					select * from mcp.mcp_fab_veh_fh01t04_hf
         |					where status0 = 'Z700'
         |				)a
         |				join
@@ -274,6 +278,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |						from mcp.mcp_fab_veh_result_info_hi
         |						where result_name = '000700'
         |						and plant in ('CPA2','CPM')
+        |           and plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 45 * 24 * 60 * 60, 'yyyy-MM-dd')
         |					) t1
         |					where result_value_id = '13' and rn = 1
         |				)b on a.werk=b.werk and a.spj=b.spj and a.kanr=b.kanr
@@ -312,8 +317,10 @@ object mcp_fab_veh_dlq_detail_hi {
         |				null BHG,
         |				1 ZS,
         |				ROW_NUMBER() over(PARTITION by werk, spj, kanr, CAL_DATE order by mdatumzeit) rn
-        |			FROM mcp.mcp_fab_veh_fh01t04_hi
-        |			WHERE plant is not null and status0 = 'Z700'
+        |			FROM mcp.mcp_fab_veh_fh01t04_hf
+        |			WHERE plant is not null
+        |     and status0 = 'Z700'
+        |     and CAL_DATE >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd'), 'yyyy-MM-dd')
         |			union all
         |			-- 不合格
         |			select
@@ -342,7 +349,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |					b.kanr
         |				from
         |				(
-        |					select * from mcp.mcp_fab_veh_fh01t04_hi
+        |					select * from mcp.mcp_fab_veh_fh01t04_hf
         |					where status0 = 'Z700'
         |				)a
         |				join
@@ -353,7 +360,8 @@ object mcp_fab_veh_dlq_detail_hi {
         |							,ROW_NUMBER() over (partition by werk,spj,kanr,result_name order by capture_time) rn
         |						from mcp.mcp_fab_veh_result_info_hi
         |						WHERE result_value_id IN ('10','13')
-        |							AND geraetename  like '%FL%'
+        |						AND geraetename  like '%FL%'
+        |           and plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 45 * 24 * 60 * 60, 'yyyy-MM-dd')
         |					) t1
         |					where result_value_id = '13' and rn = 1
         |				)b on a.werk=b.werk and a.spj=b.spj and a.kanr=b.kanr
@@ -400,7 +408,8 @@ object mcp_fab_veh_dlq_detail_hi {
         |					WHEN plant = 'CPW' AND status0 IN ('M795','M800') THEN 1
         |				END ZS,
         |				null BHG
-        |			FROM mcp.mcp_fab_veh_fh01t04_hi
+        |			FROM mcp.mcp_fab_veh_fh01t04_hf
+        |     where mdatum >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd'), 'yyyy-MM-dd')
         |		)a
         |		WHERE ZS = 1
         |		union all
@@ -444,7 +453,8 @@ object mcp_fab_veh_dlq_detail_hi {
         |					WHEN plant = 'CPH2' AND status0 IN ('Z800','Q801') THEN 1
         |					WHEN plant = 'CPW' AND status0 IN ('Z800','Q800') AND geraetename3 in ('HCWZP81W','HCWZP82W','HCWZP83W','HCWZP84W','HCWZP85W','HCWZP86W','HCWZP87W','HCWZP88W','QCWZP81W','QCWZP82W','Q78ZP81W','QC6ZP81W','QCSZP81W','QC2ZP81W') THEN 1
         |				END BHG
-        |			FROM mcp.mcp_fab_veh_fh01t04_hi
+        |			FROM mcp.mcp_fab_veh_fh01t04_hf
+        |     where mdatum >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd'), 'yyyy-MM-dd')
         |		)a
         |		WHERE BHG = 1
         |		union all
@@ -483,10 +493,11 @@ object mcp_fab_veh_dlq_detail_hi {
         |				case
         |					when status0 = 'R480' then 1
         |				end BHG
-        |			FROM mcp.mcp_fab_veh_fh01t04_hi
+        |			FROM mcp.mcp_fab_veh_fh01t04_hf
         |			where plant is not null
         |			and rn = 1
         |			and status0 IN ('R480','R500')
+        |     and cal_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd'), 'yyyy-MM-dd')
         |		)a
         |		union all
         |		-- ZP5A
@@ -504,7 +515,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |			BHG,
         |			nvl(ZS,0) - nvl(BHG,0) as HG,
         |			ZS,
-        |			rank() over(PARTITION by werk, spj, kanr, plant_date, status0 order by Capture_time) rn
+        |			ROW_NUMBER() over(PARTITION by werk, spj, kanr, plant_date, status0 order by Capture_time) rn
         |		FROM
         |		(
         |		--获取车辆明细
@@ -524,9 +535,10 @@ object mcp_fab_veh_dlq_detail_hi {
         |				case
         |					when status0 = 'L480' then 1
         |				end BHG
-        |			FROM mcp.mcp_fab_veh_fh01t04_hi
+        |			FROM mcp.mcp_fab_veh_fh01t04_hf
         |			WHERE plant in ('CPM', 'CPA3', 'CPH2', 'CPC', 'CPY')
         |			AND status0 IN ('L500','L480')
+        |     and cal_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd'), 'yyyy-MM-dd')
         |		)a
         |		union all
         |		-- ALS
@@ -567,6 +579,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |				select werk, spj, kanr from mcp.mcp_fab_veh_result_info_hi
         |				where Result_value_id in('10','13')
         |				and (substr(Result_name,-3) in ('258', '259', '701') or substr(Result_name,-4)= '2813')
+        |       and plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 45 * 24 * 60 * 60, 'yyyy-MM-dd')
         |				group by werk, spj, kanr having sum(CAST(Result_value_id AS INT))/count(1)=10
         |			)a
         |			join
@@ -581,6 +594,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |					Result_value_id = '10'
         |					and plant in ('CPM','CPH2','CPC','CPY')
         |					and (substr(Result_name,-3) in ('258', '259', '701') or substr(Result_name,-4)= '2813')
+        |         and plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 45 * 24 * 60 * 60, 'yyyy-MM-dd')
         |			)b on a.werk = b.werk
         |				and a.spj = b.spj
         |				and a.kanr = b.kanr
@@ -610,6 +624,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |					Result_value_id = '13'
         |					and plant in ('CPM','CPH2','CPC','CPY')
         |					and (substr(Result_name,-3) in ('258', '259', '701') or substr(Result_name,-4)= '2813')
+        |         and plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 45 * 24 * 60 * 60, 'yyyy-MM-dd')
         |			) ta WHERE RN = 1
         |		) t
         |		union all
@@ -649,9 +664,10 @@ object mcp_fab_veh_dlq_detail_hi {
         |				end BHG,
         |				null ZS,
         |				ROW_NUMBER() over(PARTITION by werk, spj, kanr, cal_date, status0 order by mdatumzeit) rn
-        |			FROM mcp.mcp_fab_veh_fh01t04_hi
+        |			FROM mcp.mcp_fab_veh_fh01t04_hf
         |			WHERE plant = 'CPA3'
-        |				AND status0 IN ('Q710','Q705') --Q705计数为不合格 RQ710计数为合格
+        |			AND status0 IN ('Q710','Q705') --Q705计数为不合格 RQ710计数为合格
+        |     and cal_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd'), 'yyyy-MM-dd')
         |			union all
         |			-- CPA2,CPM,CPH2,CPY,CPC
         |			-- 合格
@@ -674,6 +690,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |				select werk, spj, kanr from mcp.mcp_fab_veh_result_info_hi
         |				where Result_value_id in('10','13')
         |				and substr(Result_name,-3) in ('702', '298',' 299')
+        |       and plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 45 * 24 * 60 * 60, 'yyyy-MM-dd')
         |				group by werk, spj, kanr having sum(CAST(Result_value_id AS INT))/count(1)=10
         |			)a
         |			join
@@ -687,6 +704,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |				where Result_value_id = '10'
         |				and plant in ('CPM','CPH2','CPA2','CPC','CPY')
         |				and substr(Result_name,-3) in ('702', '298',' 299')
+        |       and plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 45 * 24 * 60 * 60, 'yyyy-MM-dd')
         |			)b on a.werk = b.werk
         |				and a.spj = b.spj
         |				and a.kanr = b.kanr
@@ -715,6 +733,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |				where Result_value_id = '13'
         |				and plant in ('CPM','CPH2','CPA2','CPC','CPY')
         |				and substr(Result_name,-3) in ('702', '298',' 299')
+        |       and plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 45 * 24 * 60 * 60, 'yyyy-MM-dd')
         |			) ta WHERE RN = 1
         |		) t
         |		union all
@@ -736,10 +755,10 @@ object mcp_fab_veh_dlq_detail_hi {
         |			ROW_NUMBER() over(PARTITION by a.werk, a.spj, a.kanr, a.cal_date order by mdatumzeit) rn
         |		from
         |		(
-        |			select * from mcp.mcp_fab_veh_fh01t04_hi
+        |			select * from mcp.mcp_fab_veh_fh01t04_hf
         |			where status0 = 'Z700'
         |			and plant IN ('CPM','CPH2','CPC','CPY')
-        |			and cal_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 1 * 24 * 60 * 60, 'yyyy-MM-dd')
+        |			and cal_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd'), 'yyyy-MM-dd')
         |			and rn = 1
         |		) a
         |		left join
@@ -880,6 +899,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |					select result_name, werk, spj, kanr
         |					from mcp.mcp_fab_veh_result_info_hi
         |					where Result_value_id in('10','13')
+        |         and plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 45 * 24 * 60 * 60, 'yyyy-MM-dd')
         |					and geraetename not regexp '%FL%'
         |					and case
         |							when plant in ('CPA2','CPA3','CPY','CPC') and result_name regexp '-|_VW' then plant
@@ -898,6 +918,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |						mcp.mcp_fab_veh_result_info_hi
         |					-- 记录只为10的数据，获取最早时间
         |					where Result_value_id = '10'
+        |         and plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 45 * 24 * 60 * 60, 'yyyy-MM-dd')
         |					and geraetename not regexp '%FL%'
         |					and case
         |							when plant in ('CPA2','CPA3','CPY','CPC') and result_name regexp '-|_VW' then plant
@@ -931,6 +952,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |						ROW_NUMBER() over(partition by werk,spj,kanr,result_name ORDER BY capture_time asc) rn
         |					from mcp.mcp_fab_veh_result_info_hi
         |					where Result_value_id = '13'
+        |         and plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 45 * 24 * 60 * 60, 'yyyy-MM-dd')
         |					and geraetename not regexp '%FL%'
         |					and case
         |							when plant in ('CPA2','CPA3','CPY','CPC') and result_name regexp '-|_VW' then plant
@@ -952,11 +974,12 @@ object mcp_fab_veh_dlq_detail_hi {
         |	) a
         |	left join
         |	(
-        |		select * from mcp.mcp_fab_veh_fh01t04_hi
-        |		where status0 = 'M100' and rn = 1
+        |		select * from mcp.mcp_fab_veh_fh01t04_hf
+        |		where status0 = 'M100'
+        |   and rn = 1
         |	)b
         |	ON A.werk = B.werk AND A.spj = B.spj AND A.kanr = B.kanr AND A.plant_date = B.cal_date
-        |) t where plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 1 * 24 * 60 * 60, 'yyyy-MM-dd')
+        |) t where plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd'), 'yyyy-MM-dd')
         |and plant_date <= CURRENT_DATE()
         |"""
         .stripMargin)

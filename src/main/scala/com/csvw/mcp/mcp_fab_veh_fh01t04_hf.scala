@@ -2,7 +2,7 @@ package com.csvw.mcp
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-object mcp_fab_veh_fh01t04_hi {
+object mcp_fab_veh_fh01t04_hf {
   def main(args: Array[String]): Unit = {
 
     val sparkKudu: SparkSession = SparkSession.builder().getOrCreate()
@@ -13,14 +13,15 @@ object mcp_fab_veh_fh01t04_hi {
     val tablelist_fh01t04 = Map(
       "cpy_fh01t04" -> "ods.fab_fis_90068_rpt_cpy_fh01t04_nt_streaming",
       "meb_fh01t04" -> "ods.fab_fis_90103_rpt_meb_fh01t04_nt_streaming",
-      "meb_fh01t04" -> "ods.fab_fis_90114_rpt_cpn_fh01t04_nt_streaming",
+      "cpn_fh01t04" -> "ods.fab_fis_90114_rpt_cpn_fh01t04_nt_streaming",
       "cph_fh01t04" -> "ods.fab_fis_90152_rpt_cph_fh01t04_nt_streaming",
       "cpc_fh01t04" -> "ods.fab_fis_90175_rpt_cpc_fh01t04_nt_streaming"
     )
     // TO4表增加过滤条件
     val filter_t04 = "substr(knr1,3,1) != '9' " +
       "and status0 IN ('A700','R700','L000','L800','M7X0','R100','L100','L500','M100','R500'," +
-      "'V900','Z700','Z900','Z897','Z898','Z89X','M795','M800','M810','Q800','Q801','Z800','R480','L480','Q710','Q705')"
+      "'V900','Z700','Z900','Z897','Z898','Z89X','M795','M800','M810','Q800','Q801','Z800','R480'," +
+      "'L480','Q710','Q705')"
 
     // 动态注册所有表
     tablelist_fh01t04.map { case (targetTable, sourceTable) =>
@@ -66,7 +67,7 @@ object mcp_fab_veh_fh01t04_hi {
     // 输出到hive
     sparkKudu.sql(
       """
-        |insert overwrite table mcp.mcp_fab_veh_fh01t04_hi
+        |insert overwrite table mcp.mcp_fab_veh_fh01t04_hf
         |select
         |	vin,
         |	werk,
