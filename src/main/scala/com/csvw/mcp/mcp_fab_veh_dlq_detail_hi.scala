@@ -370,7 +370,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |		union all
         |		-- ZP8
         |		-- CPA2 CPA3 CPM CPY CPH2 CPC
-        |		select
+        |   select
         |			plant,
         |			plant_date,
         |			capture_time,
@@ -383,80 +383,91 @@ object mcp_fab_veh_dlq_detail_hi {
         |			BHG,
         |			nvl(ZS,0) - nvl(BHG,0) as HG,
         |			ZS,
-        |			ROW_NUMBER() over(PARTITION by werk, spj, kanr, plant_date order by Capture_time) rn
-        |		FROM
+        |			RN
+        |		from
         |		(
-        |		--获取车辆总数
-        |			SELECT
+        |   -- 总数
+        |			select
         |				plant,
-        |				mdatum plant_date,
-        |				mdatumzeit capture_time,
-        |				modell series_code_6,
-        |				series_name series_name_6,
+        |				plant_date,
+        |				capture_time,
+        |				series_code_6,
+        |				series_name_6,
         |				werk,
         |				spj,
         |				kanr,
-        |				CASE
-        |					WHEN plant = 'CPN' AND status0 IN ('M800','M810') THEN 1
-        |					WHEN plant = 'CPY' AND status0 IN ('M795','M800') AND GERAETENAME3 IN ( 'HC5ZP815','HC5ZP825','HC5ZP835','HC5ZP845','HC5ZP855','HC5ZP865','HC5ZP875','HC5ZP885','HC5ZP895','HC5ZP8A5','HC5ZP8B5','HC5ZP8C5','HC5ZP8D5','HC5ZP8E5','HC5ZP8F5','HC5ZP8G5','HC5ZP8H5','HC5ZP8I5','HC5ZP8J5','HC5ZP8K5','HC5ZP8L5','QC5ZP815','QC5ZP825','QC5ZP835') THEN 1
-        |					WHEN plant = 'CPC' AND status0 IN ('M795','M800') THEN 1
-        |					WHEN plant = 'CPA2' AND status0 = 'M795' AND GERAETENAME3 IN ( 'H78ZP816','H78ZP826','H78ZP836','H78ZP846','H78ZP856','H78ZP866','H78ZP876','H78ZP886','H78ZP896','H78ZP8A6','H78ZP8B6','H78ZP8C6','H78ZP8D6','H78ZP8E6','H78ZP8F6','H78ZP8G6','H78ZP8H6','H78ZP8I6','H78ZP8J6','H78ZP8K6','H78ZP8L6','Q78ZP816','Q78ZP826','Q78ZP836'  ) THEN 1
-        |					WHEN plant = 'CPA3' AND status0 = 'M795' AND GERAETENAME3 IN ( 'Q78ZP811','Q78ZP821','H78ZP861','H78ZP871','H78ZP881','H78ZP891','H78ZP8A1','H78ZP8B1','H78ZP8C1','H78ZP8D1','H78ZP8E1','H78ZP8F1','H78ZP8G1','H78ZP8H1','H78ZP8I1','H78ZP8J1','H78ZP8K1','H78ZP8L1'  ) THEN 1
-        |					WHEN plant = 'CPM' AND status0 = 'M795' AND GERAETENAME3 IN ( 'H78ZP81A','H78ZP82A','H78ZP83A','H78ZP84A','H78ZP85A','H78ZP86A','H78ZP87A','H78ZP88A','H78ZP89A','H78ZP8AA','H78ZP8BA','H78ZP8CA','H78ZP8DA','H78ZP8EA','H78ZP8FA','H78ZP8GA','H78ZP8HA','H78ZP8IA','H78ZP8JA','H78ZP8KA','Q78ZP81A','Q78ZP82A','H78ZRW1A','H78ZRW2A','H78ZRW3A','H78ZRW4A'  )THEN 1
-        |					WHEN plant = 'CPH1' AND status0 = 'M800' THEN 1
-        |					WHEN plant = 'CPH2' AND status0 = 'M800' THEN 1
-        |					WHEN plant = 'CPW' AND status0 IN ('M795','M800') THEN 1
-        |				END ZS,
-        |				null BHG
-        |			FROM mcp.mcp_fab_veh_fh01t04_hf
-        |     where mdatum >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd'), 'yyyy-MM-dd')
-        |		)a
-        |		WHERE ZS = 1
-        |		union all
-        |		-- ZP8
-        |		-- CPA2 CPA3 CPM CPY CPH2 CPC
-        |		select
-        |			plant,
-        |			plant_date,
-        |			capture_time,
-        |			'ZP8' checkpoint,
-        |			series_code_6,
-        |			series_name_6,
-        |			werk,
-        |			spj,
-        |			kanr,
-        |			BHG,
-        |			null HG,
-        |			ZS,
-        |			ROW_NUMBER() over(PARTITION by werk, spj, kanr, plant_date order by Capture_time) rn
-        |		FROM
-        |		(
-        |			-- 获取不合格车辆
-        |			SELECT
+        |				BHG,
+        |				ZS,
+        |				ROW_NUMBER() over(PARTITION by werk, spj, kanr, plant_date order by Capture_time) rn
+        |			FROM
+        |			(
+        |			--获取车辆总数
+        |				SELECT
+        |					plant,
+        |					mdatum plant_date,
+        |					mdatumzeit capture_time,
+        |					modell series_code_6,
+        |					series_name series_name_6,
+        |					werk,
+        |					spj,
+        |					kanr,
+        |					CASE
+        |						WHEN plant = 'CPN' AND status0 IN ('M800','M810') THEN 1
+        |						WHEN plant = 'CPY' AND status0 IN ('M795','M800') AND GERAETENAME3 IN ( 'HC5ZP815','HC5ZP825','HC5ZP835','HC5ZP845','HC5ZP855','HC5ZP865','HC5ZP875','HC5ZP885','HC5ZP895','HC5ZP8A5','HC5ZP8B5','HC5ZP8C5','HC5ZP8D5','HC5ZP8E5','HC5ZP8F5','HC5ZP8G5','HC5ZP8H5','HC5ZP8I5','HC5ZP8J5','HC5ZP8K5','HC5ZP8L5','QC5ZP815','QC5ZP825','QC5ZP835') THEN 1
+        |						WHEN plant = 'CPC' AND status0 IN ('M795','M800') THEN 1
+        |						WHEN plant = 'CPA2' AND status0 = 'M795' AND GERAETENAME3 IN ( 'H78ZP816','H78ZP826','H78ZP836','H78ZP846','H78ZP856','H78ZP866','H78ZP876','H78ZP886','H78ZP896','H78ZP8A6','H78ZP8B6','H78ZP8C6','H78ZP8D6','H78ZP8E6','H78ZP8F6','H78ZP8G6','H78ZP8H6','H78ZP8I6','H78ZP8J6','H78ZP8K6','H78ZP8L6','Q78ZP816','Q78ZP826','Q78ZP836'  ) THEN 1
+        |						WHEN plant = 'CPA3' AND status0 = 'M795' AND GERAETENAME3 IN ( 'Q78ZP811','Q78ZP821','H78ZP861','H78ZP871','H78ZP881','H78ZP891','H78ZP8A1','H78ZP8B1','H78ZP8C1','H78ZP8D1','H78ZP8E1','H78ZP8F1','H78ZP8G1','H78ZP8H1','H78ZP8I1','H78ZP8J1','H78ZP8K1','H78ZP8L1'  ) THEN 1
+        |						WHEN plant = 'CPM' AND status0 = 'M795' AND GERAETENAME3 IN ( 'H78ZP81A','H78ZP82A','H78ZP83A','H78ZP84A','H78ZP85A','H78ZP86A','H78ZP87A','H78ZP88A','H78ZP89A','H78ZP8AA','H78ZP8BA','H78ZP8CA','H78ZP8DA','H78ZP8EA','H78ZP8FA','H78ZP8GA','H78ZP8HA','H78ZP8IA','H78ZP8JA','H78ZP8KA','Q78ZP81A','Q78ZP82A','H78ZRW1A','H78ZRW2A','H78ZRW3A','H78ZRW4A'  )THEN 1
+        |						WHEN plant = 'CPH1' AND status0 = 'M800' THEN 1
+        |						WHEN plant = 'CPH2' AND status0 = 'M800' THEN 1
+        |					END ZS,
+        |					null BHG
+        |				FROM mcp.mcp_fab_veh_fh01t04_hf
+        |				where mdatum >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd'), 'yyyy-MM-dd')
+        |			)a
+        |			WHERE ZS = 1
+        |			union all
+        |			-- 不合格
+        |			select
         |				plant,
-        |				mdatum plant_date,
-        |				mdatumzeit capture_time,
-        |				modell series_code_6,
-        |				series_name series_name_6,
+        |				plant_date,
+        |				capture_time,
+        |				series_code_6,
+        |				series_name_6,
         |				werk,
         |				spj,
         |				kanr,
-        |				null ZS,
-        |				CASE
-        |					WHEN plant = 'CPN' AND status0 IN ('Z800','Q800') THEN 1
-        |					WHEN plant = 'CPY' AND status0 IN ('Q800','Z800') AND GERAETENAME3 IN ( 'HC5ZP815','HC5ZP825','HC5ZP835','HC5ZP845','HC5ZP855','HC5ZP865','HC5ZP875','HC5ZP885','HC5ZP895','HC5ZP8A5','HC5ZP8B5','HC5ZP8C5','HC5ZP8D5','HC5ZP8E5','HC5ZP8F5','HC5ZP8G5','HC5ZP8H5','HC5ZP8I5','HC5ZP8J5','HC5ZP8K5','HC5ZP8L5','QC5ZP815','QC5ZP825','QC5ZP835') THEN 1
-        |					WHEN plant = 'CPC' AND status0 IN ('Z800','Q801') and GERAETENAME3 IN ('HCSZP81C','HCSZP82C','HCSZP83C','HCSZP84C','HCSZP85C','HCSZP86C','HCSZP87C','HCSZP88C','HCSZP89C','HCSZP8AC','HCSZP8BC','HCSZP8CC','HCSZP8DC','HCSZP8EC','HCSZP8FC','HCSZP8GC','HCSZP8HC','HCSZP8IC','HCSZP8JC','HCSZP8KC','HCSZP8LC','QCSZP81C','QCSZP82C','QCSZP83C') THEN 1
-        |					WHEN plant = 'CPA2' AND status0 IN ('Z800','Q801') AND GERAETENAME3 IN ( 'H78ZP816','H78ZP826','H78ZP836','H78ZP846','H78ZP856','H78ZP866','H78ZP876','H78ZP886','H78ZP896','H78ZP8A6','H78ZP8B6','H78ZP8C6','H78ZP8D6','H78ZP8E6','H78ZP8F6','H78ZP8G6','H78ZP8H6','H78ZP8I6','H78ZP8J6','H78ZP8K6','H78ZP8L6','Q78ZP816','Q78ZP826','Q78ZP836'  ) THEN 1
-        |					WHEN plant = 'CPA3' AND status0 IN ('Z800','Q800') AND GERAETENAME3 IN ( 'Q78ZP811','Q78ZP821','H78ZP861','H78ZP871','H78ZP881','H78ZP891','H78ZP8A1','H78ZP8B1','H78ZP8C1','H78ZP8D1','H78ZP8E1','H78ZP8F1','H78ZP8G1','H78ZP8H1','H78ZP8I1','H78ZP8J1','H78ZP8K1','H78ZP8L1'  ) THEN 1
-        |					WHEN plant = 'CPM' AND status0 IN ('Z800','Q800') AND GERAETENAME3 IN ( 'H78ZP81A','H78ZP82A','H78ZP83A','H78ZP84A','H78ZP85A','H78ZP86A','H78ZP87A','H78ZP88A','H78ZP89A','H78ZP8AA','H78ZP8BA','H78ZP8CA','H78ZP8DA','H78ZP8EA','H78ZP8FA','H78ZP8GA','H78ZP8HA','H78ZP8IA','H78ZP8JA','H78ZP8KA','Q78ZP81A','Q78ZP82A','H78ZRW1A','H78ZRW2A','H78ZRW3A','H78ZRW4A'  )THEN 1
-        |					WHEN plant = 'CPH1' AND status0 IN ('Z800','Q801') THEN 1
-        |					WHEN plant = 'CPH2' AND status0 IN ('Z800','Q801') THEN 1
-        |					WHEN plant = 'CPW' AND status0 IN ('Z800','Q800') AND geraetename3 in ('HCWZP81W','HCWZP82W','HCWZP83W','HCWZP84W','HCWZP85W','HCWZP86W','HCWZP87W','HCWZP88W','QCWZP81W','QCWZP82W','Q78ZP81W','QC6ZP81W','QCSZP81W','QC2ZP81W') THEN 1
-        |				END BHG
-        |			FROM mcp.mcp_fab_veh_fh01t04_hf
-        |     where mdatum >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd'), 'yyyy-MM-dd')
-        |		)a
-        |		WHERE BHG = 1
+        |				BHG,
+        |				ZS,
+        |				ROW_NUMBER() over(PARTITION by werk, spj, kanr, plant_date order by Capture_time) rn
+        |			FROM
+        |			(
+        |				-- 获取不合格车辆
+        |				SELECT
+        |					plant,
+        |					mdatum plant_date,
+        |					mdatumzeit capture_time,
+        |					modell series_code_6,
+        |					series_name series_name_6,
+        |					werk,
+        |					spj,
+        |					kanr,
+        |					null ZS,
+        |					CASE
+        |						WHEN plant = 'CPN' AND status0 IN ('Z800','Q800') THEN 1
+        |						WHEN plant = 'CPY' AND status0 IN ('Q800','Z800') AND GERAETENAME3 IN ( 'HC5ZP815','HC5ZP825','HC5ZP835','HC5ZP845','HC5ZP855','HC5ZP865','HC5ZP875','HC5ZP885','HC5ZP895','HC5ZP8A5','HC5ZP8B5','HC5ZP8C5','HC5ZP8D5','HC5ZP8E5','HC5ZP8F5','HC5ZP8G5','HC5ZP8H5','HC5ZP8I5','HC5ZP8J5','HC5ZP8K5','HC5ZP8L5','QC5ZP815','QC5ZP825','QC5ZP835') THEN 1
+        |						WHEN plant = 'CPC' AND status0 IN ('Z800','Q801') and GERAETENAME3 IN ('HCSZP81C','HCSZP82C','HCSZP83C','HCSZP84C','HCSZP85C','HCSZP86C','HCSZP87C','HCSZP88C','HCSZP89C','HCSZP8AC','HCSZP8BC','HCSZP8CC','HCSZP8DC','HCSZP8EC','HCSZP8FC','HCSZP8GC','HCSZP8HC','HCSZP8IC','HCSZP8JC','HCSZP8KC','HCSZP8LC','QCSZP81C','QCSZP82C','QCSZP83C') THEN 1
+        |						WHEN plant = 'CPA2' AND status0 IN ('Z800','Q801') AND GERAETENAME3 IN ( 'H78ZP816','H78ZP826','H78ZP836','H78ZP846','H78ZP856','H78ZP866','H78ZP876','H78ZP886','H78ZP896','H78ZP8A6','H78ZP8B6','H78ZP8C6','H78ZP8D6','H78ZP8E6','H78ZP8F6','H78ZP8G6','H78ZP8H6','H78ZP8I6','H78ZP8J6','H78ZP8K6','H78ZP8L6','Q78ZP816','Q78ZP826','Q78ZP836'  ) THEN 1
+        |						WHEN plant = 'CPA3' AND status0 IN ('Z800','Q800') AND GERAETENAME3 IN ( 'Q78ZP811','Q78ZP821','H78ZP861','H78ZP871','H78ZP881','H78ZP891','H78ZP8A1','H78ZP8B1','H78ZP8C1','H78ZP8D1','H78ZP8E1','H78ZP8F1','H78ZP8G1','H78ZP8H1','H78ZP8I1','H78ZP8J1','H78ZP8K1','H78ZP8L1'  ) THEN 1
+        |						WHEN plant = 'CPM' AND status0 IN ('Z800','Q800') AND GERAETENAME3 IN ( 'H78ZP81A','H78ZP82A','H78ZP83A','H78ZP84A','H78ZP85A','H78ZP86A','H78ZP87A','H78ZP88A','H78ZP89A','H78ZP8AA','H78ZP8BA','H78ZP8CA','H78ZP8DA','H78ZP8EA','H78ZP8FA','H78ZP8GA','H78ZP8HA','H78ZP8IA','H78ZP8JA','H78ZP8KA','Q78ZP81A','Q78ZP82A','H78ZRW1A','H78ZRW2A','H78ZRW3A','H78ZRW4A'  )THEN 1
+        |						WHEN plant = 'CPH1' AND status0 IN ('Z800','Q801') THEN 1
+        |						WHEN plant = 'CPH2' AND status0 IN ('Z800','Q801') THEN 1
+        |					END BHG
+        |				FROM mcp.mcp_fab_veh_fh01t04_hf
+        |				where mdatum >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd'), 'yyyy-MM-dd')
+        |			)a
+        |			WHERE BHG = 1
+        |		) t where rn = 1
         |		union all
         |		-- ZP5
         |		-- CPA2 CPA3 CPM CPY CPH1 CPH2 CPC
