@@ -51,7 +51,12 @@ object mcp_fab_veh_dlq_latest_1day_hf {
     val table = "mcp_fab_veh_dlq_latest_1day_hf"
 
     //数据全量写入mysql
-    sourceDF.write.mode("overwrite").jdbc(url, table, props)
+    sourceDF
+      .write
+      .mode("overwrite")
+      .option("batchsize", "10000") // 批量写入大小（减少连接次数）
+      .option("truncate", "true") // 若mode=overwrite，truncate=true会先truncate表（保留表结构），false则drop后重建
+      .jdbc(url, table, props)
 
     // 创建数据库连接
     val connection = DriverManager.getConnection(url, props)
