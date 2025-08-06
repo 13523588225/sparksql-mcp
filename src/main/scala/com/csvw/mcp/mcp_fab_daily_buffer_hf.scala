@@ -75,7 +75,6 @@ object mcp_fab_daily_buffer_hf {
          |	) t
          |	group by PLANT, WERK, SPJ, KANR
          |)
-         |INSERT OVERWRITE TABLE mcp.mcp_fab_daily_buffer_hf
          |SELECT distinct
          |	a.WERK,
          |	a.SPJ,
