@@ -4,6 +4,9 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 
 object mcp_fab_veh_fh01t04_hf {
   def main(args: Array[String]): Unit = {
+    // 传递参数
+    val tb_name = args(0)
+    println(s"第一个参数: $tb_name")
 
     val sparkKudu: SparkSession = SparkSession.builder().getOrCreate()
 
@@ -69,13 +72,14 @@ object mcp_fab_veh_fh01t04_hf {
 
     // 输出到hive
     sparkKudu.sql(
-      """
-        |insert overwrite table mcp.mcp_fab_veh_fh01t04_hf
+      s"""
+        |insert overwrite table $tb_name
         |select
         |	vin,
         |	werk,
         |	spj,
         |	kanr,
+        |	source_plant,										                    -- 初始工厂
         |	plant,                                              -- 工厂名称(日产量报表) CP开头
         |	pr_nr,                                              -- PR号,区分SKD车辆
         |	status0,                                            -- 原始检查点状态
@@ -110,6 +114,7 @@ object mcp_fab_veh_fh01t04_hf {
         |		p1.werk,
         |		p1.spj,
         |		p1.kanr,
+        |		p1.source_plant,									                     -- 初始工厂
         |		p1.plant,                                              -- 工厂名称(日产量报表) CP开头
         |		p1.pr_nr,                                              -- PR号,区分SKD车辆
         |		p1.status0,                                            -- 原始检查点状态
@@ -155,10 +160,14 @@ object mcp_fab_veh_fh01t04_hf {
         |			,a.spj
         |			,a.kanr
         |			,CASE
+        |				WHEN d.target_plant is not null THEN replace(substr(d.source_plant,1,4),'PF','CP')
+        |				else a.plant
+        |			END source_plant 		  -- 初始工厂
+        |			,CASE
         |				WHEN d.target_plant is not null THEN replace(substr(d.target_plant,1,4),'PF','CP')
         |				else a.plant
-        |			END AS plant 			  -- SKD车辆之后工厂
-        |			,d.target_plant           -- SKD车辆归属工厂
+        |			END AS plant 			    -- SKD车辆之后工厂
+        |			,d.target_plant       -- SKD车辆归属工厂
         |			,case
         |				-- CPA3在R100、R500(ZP5) B车间车身区分L1和L2产线
         |				when a.status0 = 'R100' and a.werk = '78' AND a.fanlage2 like '%CP3%' and a.anlbgr3 = 'IR11' then 'PFA3 L1'
