@@ -79,7 +79,7 @@ object mcp_fab_veh_fh01t04_hf {
         |	werk,
         |	spj,
         |	kanr,
-        |	source_plant,										                    -- 初始工厂
+        |	source_plant,										-- 初始工厂
         |	plant,                                              -- 工厂名称(日产量报表) CP开头
         |	pr_nr,                                              -- PR号,区分SKD车辆
         |	status0,                                            -- 原始检查点状态
@@ -114,7 +114,7 @@ object mcp_fab_veh_fh01t04_hf {
         |		p1.werk,
         |		p1.spj,
         |		p1.kanr,
-        |		p1.source_plant,									                     -- 初始工厂
+        |		p1.source_plant,									   -- 初始工厂
         |		p1.plant,                                              -- 工厂名称(日产量报表) CP开头
         |		p1.pr_nr,                                              -- PR号,区分SKD车辆
         |		p1.status0,                                            -- 原始检查点状态
@@ -148,8 +148,8 @@ object mcp_fab_veh_fh01t04_hf {
         |		end factory,  				 						   -- 工厂名称(物流报表) PF开头
         |		case
         |			when p1.mdatumzeit >= concat(p1.mdatum,' ', p3.start_time)
-        |				and p1.mdatumzeit < concat(from_unixtime(unix_timestamp(p1.mdatum) + 86400, 'yyyy-MM-dd'),' ', p3.end_time) then p1.mdatum
-        |			else from_unixtime(unix_timestamp(p1.mdatum) - 86400, 'yyyy-MM-dd')
+        |				and p1.mdatumzeit < concat(from_unixtime(unix_timestamp(p1.mdatum,'yyyy-MM-dd') + 86400, 'yyyy-MM-dd'),' ', p3.end_time) then p1.mdatum
+        |			else from_unixtime(unix_timestamp(p1.mdatum,'yyyy-MM-dd') - 86400, 'yyyy-MM-dd')
         |		end cal_date,                                           -- 工厂日期
         |		p3.start_time,
         |		p3.end_time
@@ -166,8 +166,8 @@ object mcp_fab_veh_fh01t04_hf {
         |			,CASE
         |				WHEN d.target_plant is not null THEN replace(substr(d.target_plant,1,4),'PF','CP')
         |				else a.plant
-        |			END AS plant 			    -- SKD车辆之后工厂
-        |			,d.target_plant       -- SKD车辆归属工厂
+        |			END AS plant 			  -- SKD车辆之后工厂
+        |			,d.target_plant           -- SKD车辆归属工厂
         |			,case
         |				-- CPA3在R100、R500(ZP5) B车间车身区分L1和L2产线
         |				when a.status0 = 'R100' and a.werk = '78' AND a.fanlage2 like '%CP3%' and a.anlbgr3 = 'IR11' then 'PFA3 L1'
@@ -320,7 +320,7 @@ object mcp_fab_veh_fh01t04_hf {
         |		)c
         |		on trim(b.modell) = c.code_6 and c.rn = 1
         |		left join
-        |   (
+        |        (
         |		-- SKD 车辆
         |		    select
         |                case
@@ -332,7 +332,7 @@ object mcp_fab_veh_fh01t04_hf {
         |                end werk,
         |                *
         |            from analytical_db_manual_table.mcp_pf_factory_skd_df
-        |   ) d
+        |        ) d
         |		on substr(b.modell,1,3) = d.code
         |		and a.status0 = d.checkpoint
         |		and a.pnrstring regexp d.pr

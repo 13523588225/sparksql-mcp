@@ -62,7 +62,7 @@ object mcp_fab_veh_fh04ta06_check_hi {
     }
 
     val sparkHive: SparkSession = SparkSession.builder()
-      .appName("mcp_fab_veh_fh04ta06_check_hour")
+      .appName("mcp_fab_veh_fh04ta06_check_hi")
       .config("spark.sql.warehouse.dir", "/user/hive/warehouse")
       .enableHiveSupport()
       .getOrCreate()
@@ -86,8 +86,8 @@ object mcp_fab_veh_fh04ta06_check_hi {
         |	,t1.capture_time
         |	,case
         |		when t1.capture_time >= concat(t1.cal_date,' ', t0.start_time)
-        |			and t1.capture_time < concat(from_unixtime(unix_timestamp(t1.cal_date) + 86400, 'yyyy-MM-dd'),' ', t0.end_time) then t1.cal_date
-        |		else from_unixtime(unix_timestamp(t1.cal_date) - 86400, 'yyyy-MM-dd')
+        |			and t1.capture_time < concat(from_unixtime(unix_timestamp(t1.cal_date,'yyyy-MM-dd') + 86400, 'yyyy-MM-dd'),' ', t0.end_time) then t1.cal_date
+        |		else from_unixtime(unix_timestamp(t1.cal_date,'yyyy-MM-dd') - 86400, 'yyyy-MM-dd')
         |	end plant_date
         |	,t2.text_ascii t_check_name
         |	,t1.check_value_id
@@ -118,15 +118,15 @@ object mcp_fab_veh_fh04ta06_check_hi {
         |	on t1.werk = t0.werk and t1.spj = t0.spj and t1.kanr = t0.kanr
         |left join
         |(
-        |	select * from meb_fh01tq45
+        |	select '78' werk,* from meb_fh01tq45
         |	union all
-        |	select * from cpc_fh01tq45
+        |	select 'CS' werk, * from cpc_fh01tq45
         |	union all
-        |	select * from cpy_fh01tq45
+        |	select 'C5' werk, * from cpy_fh01tq45
         |	union all
-        |	select * from cph_fh01tq45
+        |	select 'C6' werk, * from cph_fh01tq45
         |)t2
-        |on t1.check_name = t2.id
+        |on t1.check_name = t2.id and t1.werk = t2.werk
         |"""
         .stripMargin)
 

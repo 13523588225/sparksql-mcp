@@ -44,12 +44,27 @@ object mcp_fab_veh_dlq_detail_hi {
         |(
         |	select
         |		plant,
+        |		checkpoint,
         |		capture_time,
-        |		case
-        |			when werk = 'CS' then from_unixtime(unix_timestamp(substr(capture_time,1,19),'yyyy-MM-dd HH:mm:ss') - 330 * 60, 'yyyy-MM-dd HH:mm:ss')
-        |			when werk = 'C6' then from_unixtime(unix_timestamp(substr(capture_time,1,19),'yyyy-MM-dd HH:mm:ss') - 6 * 60 * 60, 'yyyy-MM-dd HH:mm:ss')
-        |			when werk in ('C5','78') then from_unixtime(unix_timestamp(substr(capture_time,1,19),'yyyy-MM-dd HH:mm:ss') - 5 * 60 * 60, 'yyyy-MM-dd HH:mm:ss')
-        |		end plant_time,
+        |		from_unixtime(unix_timestamp(substr(capture_time,1,19),'yyyy-MM-dd HH:mm:ss') - p2.mi * 60, 'yyyy-MM-dd HH:mm:ss') plant_time,
+        |		series_code_6,
+        |		series_name_6,
+        |		werk,
+        |		spj,
+        |		kanr,
+        |		NVL(BHG,0) BHG,
+        |		NVL(HG,0) HG,
+        |		NVL(ZS,0) ZS,
+        |		torque_BHG,
+        |		torque_HG,
+        |		torque_ZS,
+        |		from_unixtime(unix_timestamp(), 'yyyy-MM-dd HH:mm:ss') etl_date,
+        |		plant_date
+        |	from
+        |	(
+        |		select
+        |			plant,
+        |			capture_time,
         |		series_code_6,
         |		series_name_6,
         |		werk,
@@ -990,7 +1005,23 @@ object mcp_fab_veh_dlq_detail_hi {
         |   and rn = 1
         |	)b
         |	ON A.werk = B.werk AND A.spj = B.spj AND A.kanr = B.kanr AND A.plant_date = B.cal_date
-        |) t where plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd'), 'yyyy-MM-dd')
+        |) p1
+        |	left join
+        |	(
+        |		-- 工厂作息时间
+        |		select
+        |			factory,
+        |			start_date,
+        |			end_date,
+        |			start_time,
+        |			end_time,
+        |			nvl(cast(substr(start_time, 1,2) as int),0) * 60 + nvl(cast(substr(start_time, 4,2) as int),0) as mi
+        |		from analytical_db_manual_table.mcp_pf_factory_work_schedule_df
+        |	)p2
+        |	on p1.plant = p2.factory
+        |	and substr(p1.capture_time,1,10) >= p2.start_date
+        |	and substr(p1.capture_time,1,10) <= p2.end_date
+        |) t where plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 1 * 24 * 60 * 60, 'yyyy-MM-dd')
         |and plant_date <= CURRENT_DATE()
         |"""
         .stripMargin)

@@ -103,8 +103,8 @@ object mcp_fab_veh_result_info_hi {
          |		t1.capture_time,
          |		case
          |			when t1.capture_time >= concat(t1.cal_date,' ', t0.start_time)
-         |				and t1.capture_time < concat(from_unixtime(unix_timestamp(t1.cal_date) + 86400, 'yyyy-MM-dd'),' ', t0.end_time) then t1.cal_date
-         |			else from_unixtime(unix_timestamp(t1.cal_date) - 86400, 'yyyy-MM-dd')
+         |				and t1.capture_time < concat(from_unixtime(unix_timestamp(t1.cal_date, 'yyyy-MM-dd') + 86400, 'yyyy-MM-dd'),' ', t0.end_time) then t1.cal_date
+         |			else from_unixtime(unix_timestamp(t1.cal_date, 'yyyy-MM-dd') - 86400, 'yyyy-MM-dd')
          |		end plant_date,
          |		t1.result_name,
          |		t1.result_value_id,
@@ -149,14 +149,14 @@ object mcp_fab_veh_result_info_hi {
          |		and substr( t2.capture_time,1,21) = substr( t1.capture_time,1,21)
          |	left join
          |	(
-         |		select * from meb_fh01tq45
-         |		union all
-         |		select * from cpc_fh01tq45
-         |		union all
-         |		select * from cpy_fh01tq45
-         |		union all
-         |		select * from cph_fh01tq45
-         |	)t3 on t1.result_name = t3.id
+         |	  select '78' werk,* from meb_fh01tq45
+         |	  union all
+         |	  select 'CS' werk, * from cpc_fh01tq45
+         |	  union all
+         |	  select 'C5' werk, * from cpy_fh01tq45
+         |	  union all
+         |	  select 'C6' werk, * from cph_fh01tq45
+         |	)t3 on t1.result_name = t3.id and t1.werk = t3.werk
          |"""
         .stripMargin)
 
