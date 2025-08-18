@@ -126,7 +126,7 @@ object mcp_fab_daily_buffer_10mif {
     // 从配置文件中获取数据库连接信息
     val url = props.getProperty("url")
     //数据插入mysql表
-    val table = "mcp_fab_daily_buffer_10mif"
+    val table = "mcp_fab_daily_buffer_hf"
 
     //数据全量写入mysql
     sourceDF.write.mode("overwrite").jdbc(url, table, props)
