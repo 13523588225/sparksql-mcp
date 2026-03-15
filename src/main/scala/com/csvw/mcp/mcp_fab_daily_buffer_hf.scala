@@ -114,7 +114,7 @@ object mcp_fab_daily_buffer_hf {
         .stripMargin)
 
     // 1.数据写入hive
-    sourceDF.write.mode("overwrite").saveAsTable("mcp.mcp_fab_daily_buffer_10mif")
+    sourceDF.write.mode("overwrite").saveAsTable("mcp.mcp_fab_daily_buffer_hf")
     println("hive写入完成")
 
     // 2.数据写入mysql

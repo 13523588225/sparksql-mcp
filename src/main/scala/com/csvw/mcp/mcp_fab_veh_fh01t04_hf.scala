@@ -16,7 +16,6 @@ object mcp_fab_veh_fh01t04_hf {
     val tablelist_fh01t04 = Map(
       "cpy_fh01t04" -> "ods.fab_fis_90068_rpt_cpy_fh01t04_nt_streaming",
       "meb_fh01t04" -> "ods.fab_fis_90103_rpt_meb_fh01t04_nt_streaming",
-      "cpn_fh01t04" -> "ods.fab_fis_90114_rpt_cpn_fh01t04_nt_streaming",
       "cph_fh01t04" -> "ods.fab_fis_90152_rpt_cph_fh01t04_nt_streaming",
       "cpc_fh01t04" -> "ods.fab_fis_90175_rpt_cpc_fh01t04_nt_streaming"
     )
@@ -24,7 +23,7 @@ object mcp_fab_veh_fh01t04_hf {
     val filter_t04 = "substr(knr1,3,1) != '9' " +
       "and status0 IN ('A700','R700','L000','L800','M7X0','R100','L100','L500','M100','R500'," +
       "'V900','Z700','Z900','Z897','Z898','Z89X','M795','M800','M810','Q800','Q801','Z800','R480'," +
-      "'L480','Q710','Q705')"
+      "'L480','Q710','Q705','M8X0','L300','M200','M300','M710','M730','M800','R470')"
 
     // 动态注册所有表
     tablelist_fh01t04.map { case (targetTable, sourceTable) =>
@@ -45,11 +44,9 @@ object mcp_fab_veh_fh01t04_hf {
     val tablelist_fis = Map(
       "cpy_fh01t01" -> "ods.fab_fis_90066_rpt_cpy_fh01t01_nt_streaming",
       "meb_fh01t01" -> "ods.fab_fis_90102_rpt_meb_fh01t01_nt_streaming",
-      "cpn_fh01t01" -> "ods.fab_fis_90112_rpt_cpn_fh01t01_nt_streaming",
       "cph_fh01t01" -> "ods.fab_fis_90150_rpt_cph_fh01t01_nt_streaming",
       "cpc_fh01t01" -> "ods.fab_fis_90173_rpt_cpc_fh01t01_nt_streaming",
       "meb_fh01t05" -> "ods.fab_fis_90104_rpt_meb_fh01t05_nt_streaming",
-      "cpn_fh01t05" -> "ods.fab_fis_90115_rpt_cpn_fh01t05_nt_streaming",
       "cph_fh01t05" -> "ods.fab_fis_90153_rpt_cph_fh01t05_nt_streaming",
       "cpc_fh01t05" -> "ods.fab_fis_90176_rpt_cpc_fh01t05_nt_streaming",
       "cpy_fh01t05" -> "ods.fab_fis_90055_rpt_cpy_fh01t05_nt_streaming"
@@ -140,16 +137,16 @@ object mcp_fab_veh_fh01t04_hf {
         |		case
         |			-- 优先取SKD对应工厂
         |			when target_plant is not null then target_plant
-        |			-- CPA3在R100、R500(ZP5) B车间车身区分L1和L2产线
-        |			when p1.status0 in ('R100','R500') and p1.plant = 'CPA3' then p1.factory
-        |			-- CPA3在M01 A车间总装之后分L1和L2产线
-        |			when p1.status0_t in ('M01','ZP7','Z89X','ZP8','V900') and p1.plant = 'CPA3' then p2.factory
+        |			-- CPA3 L1和L2产线同属于CPA3
+        |			when p1.factory in ('PFA3 L1','PFA3 L2') and p1.plant = 'CPA3' then p1.factory
+        |			-- CPA3在ZP8, V900按照过Z700的车子所属工厂分L1和L2产线
+        |			when p1.status0_t in ('Z89X','ZP8','V900') and p1.plant = 'CPA3' then p2.factory
         |			else replace(p1.plant,'CP','PF')
         |		end factory,  				 						   -- 工厂名称(物流报表) PF开头
         |		case
         |			when p1.mdatumzeit >= concat(p1.mdatum,' ', p3.start_time)
-        |				and p1.mdatumzeit < concat(from_unixtime(unix_timestamp(p1.mdatum,'yyyy-MM-dd') + 86400, 'yyyy-MM-dd'),' ', p3.end_time) then p1.mdatum
-        |			else from_unixtime(unix_timestamp(p1.mdatum,'yyyy-MM-dd') - 86400, 'yyyy-MM-dd')
+        |				and p1.mdatumzeit < concat(from_unixtime(unix_timestamp(p1.mdatum) + 86400, 'yyyy-MM-dd'),' ', p3.end_time) then p1.mdatum
+        |			else from_unixtime(unix_timestamp(p1.mdatum) - 86400, 'yyyy-MM-dd')
         |		end cal_date,                                           -- 工厂日期
         |		p3.start_time,
         |		p3.end_time
@@ -166,14 +163,18 @@ object mcp_fab_veh_fh01t04_hf {
         |			,CASE
         |				WHEN d.target_plant is not null THEN replace(substr(d.target_plant,1,4),'PF','CP')
         |				else a.plant
-        |			END AS plant 			  -- SKD车辆之后工厂
-        |			,d.target_plant           -- SKD车辆归属工厂
+        |			END AS plant 			  -- SKD车辆子工厂
+        |			,d.target_plant           -- SKD车辆母工厂
         |			,case
-        |				-- CPA3在R100、R500(ZP5) B车间车身区分L1和L2产线
+        |				-- CPA3在R100、R500(ZP5)、M100、Z700检查点区分L1和L2产线
         |				when a.status0 = 'R100' and a.werk = '78' AND a.fanlage2 like '%CP3%' and a.anlbgr3 = 'IR11' then 'PFA3 L1'
         |				when a.status0 = 'R100' and a.werk = '78' AND a.fanlage2 like '%CP3%' and a.anlbgr3 = 'IR12' then 'PFA3 L2'
         |				when a.status0 = 'R500' and a.werk = '78' AND a.fanlage2 like '%CP3%' and a.anlbgr3 = 'IR52' then 'PFA3 L1'
         |				when a.status0 = 'R500' and a.werk = '78' AND a.fanlage2 like '%CP3%' and a.anlbgr3 = 'IR51' then 'PFA3 L2'
+        |				when a.status0 = 'M100' and a.werk = '78' AND a.fanlage2 like '%CP3%' and a.anlbgr3 = 'IM11' then 'PFA3 L1'
+        |				when a.status0 = 'M100' and a.werk = '78' AND a.fanlage2 like '%CP3%' and a.anlbgr3 = 'IM12' then 'PFA3 L2'
+        |				when a.status0 = 'Z700' and a.werk = '78' AND a.fanlage2 like '%CP3%' and a.anlbgr3 = 'QZ71' then 'PFA3 L1'
+        |				when a.status0 = 'Z700' and a.werk = '78' AND a.fanlage2 like '%CP3%' and a.anlbgr3 = 'QZ72' then 'PFA3 L2'
         |			end factory
         |			,d.pr pr_nr
         |			,a.status0
@@ -218,6 +219,7 @@ object mcp_fab_veh_fh01t04_hf {
         |					WHEN 'Z89X' THEN 'Z89X'
         |					WHEN 'Z900' THEN 'ZP8'
         |					WHEN 'V900' THEN 'V900'
+        |					else status0
         |				END status0_t
         |				,if(floor(cast(substr(mzeit,4,2) as int)/2 + 1)*2=60,concat(lpad(cast(cast(substr(mzeit,1,2) as int)+1 as string),2,'0'), ':00'),
         |				concat(substr(mzeit,1,3),lpad(cast(floor(cast(substr(mzeit,4,2) as int)/2 + 1)*2 as string),2,'0') )) time_slice
@@ -236,7 +238,6 @@ object mcp_fab_veh_fh01t04_hf {
         |					WHEN t1.werk = 'CS' THEN 'CPC'
         |					WHEN t1.werk = 'C6' AND substr(t1.anlbgr3,-1,1) = 'H' THEN 'CPH1'
         |					WHEN t1.werk = 'C6' AND substr(t1.anlbgr3,-1,1) IN ('J','K') THEN 'CPH2'
-        |					WHEN t1.werk = 'C2' THEN 'CPN'
         |					WHEN t1.werk = 'C5' AND t1.werk0 = 'C5' THEN 'CPY'
         |					WHEN t1.werk = '78' AND t1.fanlage2 like '%CP2%' THEN 'CPA2'
         |					WHEN t1.werk = '78' AND t1.fanlage2 like '%CP3%' THEN 'CPA3'
@@ -247,23 +248,19 @@ object mcp_fab_veh_fh01t04_hf {
         |			-- 取所有工厂对应检查点数据
         |				-- 仪征
         |				SELECT knr1,werk,spj,kanr,fanlage2,status0,mdatum,mzeit,mdatumzeit,werk0,anlbgr3,geraetename3 FROM cpy_fh01t04
-        |				WHERE werk = 'C5'
+        |				WHERE substr(knr1,3,1) != '9' AND status0 IN ('A700','R700','L000','L800','M7X0','R100','L100','L500','M100','R500','V900','Z700','Z900','Z897','Z898','Z89X','M795','M800','M810','Q800','Q801','Z800','R480','L480','Q710','Q705','M8X0','L300','M200','M300','M710','M730','M800','R470') and werk = 'C5'
         |				UNION ALL
         |				-- 安亭
         |				SELECT knr1,werk,spj,kanr,fanlage2,status0,mdatum,mzeit,mdatumzeit,werk0,anlbgr3,geraetename3 FROM meb_fh01t04
-        |				WHERE werk = '78'
-        |				UNION ALL
-        |				-- 南京
-        |				SELECT knr1,werk,spj,kanr,fanlage2,status0,mdatum,mzeit,mdatumzeit,werk0,anlbgr3,geraetename3 FROM cpn_fh01t04
-        |				WHERE werk = 'C2'
+        |				WHERE substr(knr1,3,1) != '9' AND status0 IN ('A700','R700','L000','L800','M7X0','R100','L100','L500','M100','R500','V900','Z700','Z900','Z897','Z898','Z89X','M795','M800','M810','Q800','Q801','Z800','R480','L480','Q710','Q705','M8X0','L300','M200','M300','M710','M730','M800','R470') and werk = '78'
         |				UNION ALL
         |				-- 宁波
         |				SELECT knr1,werk,spj,kanr,fanlage2,status0,mdatum,mzeit,mdatumzeit,werk0,anlbgr3,geraetename3 FROM cph_fh01t04
-        |				WHERE werk = 'C6'
+        |				WHERE substr(knr1,3,1) != '9' AND status0 IN ('A700','R700','L000','L800','M7X0','R100','L100','L500','M100','R500','V900','Z700','Z900','Z897','Z898','Z89X','M795','M800','M810','Q800','Q801','Z800','R480','L480','Q710','Q705','M8X0','L300','M200','M300','M710','M730','M800','R470') and werk = 'C6'
         |				UNION ALL
         |				-- 长沙
         |				SELECT knr1,werk,spj,kanr,fanlage2,status0,mdatum,mzeit,mdatumzeit,werk0,anlbgr3,geraetename3 FROM cpc_fh01t04
-        |				WHERE werk = 'CS'
+        |				WHERE substr(knr1,3,1) != '9' AND status0 IN ('A700','R700','L000','L800','M7X0','R100','L100','L500','M100','R500','V900','Z700','Z900','Z897','Z898','Z89X','M795','M800','M810','Q800','Q801','Z800','R480','L480','Q710','Q705','M8X0','L300','M200','M300','M710','M730','M800','R470') and werk = 'CS'
         |			)t1
         |			left join
         |			(
@@ -277,9 +274,6 @@ object mcp_fab_veh_fh01t04_hf {
         |				select werk,spj,kanr from cpy_fh01t04
         |				where substr(knr1,3,1) != '9' AND status0 IN ('Z897','Z898','Z89X') and werk='C5'
         |				union all
-        |				select werk,spj,kanr from cpn_fh01t04
-        |				where substr(knr1,3,1) != '9' AND status0 IN ('Z897','Z898','Z89X') and werk='C2'
-        |				union all
         |				select werk,spj,kanr from cpc_fh01t04
         |				where substr(knr1,3,1) != '9' AND status0 IN ('Z897','Z898','Z89X') and werk='CS'
         |			)t2 on t1.werk= t2.werk and t1.spj = t2.spj and t1.kanr = t2.kanr and t1.status0 = 'Z900'
@@ -287,7 +281,6 @@ object mcp_fab_veh_fh01t04_hf {
         |			(
         |			-- 获取SKD车子ZP8点车辆
         |				select spj, werk, knr, pnrstring from meb_fh01t05 union all
-        |				select spj, werk, knr, pnrstring from cpn_fh01t05 union all
         |				select spj, werk, knr, pnrstring from cph_fh01t05 union all
         |				select spj, werk, knr, pnrstring from cpc_fh01t05 union all
         |				select spj, werk, knr, pnrstring from cpy_fh01t05
@@ -300,8 +293,6 @@ object mcp_fab_veh_fh01t04_hf {
         |			select knr, werk, spj, kanr0, modell, vzgi, farbau, farbin, CONCAT(FGSTWELT, FGSTSPEZ, FGSTTM, FGSTPZ, FGSTMJ, FGSTWK, FGSTLFD) AS VIN from cpy_fh01t01
         |			union all
         |			select knr, werk, spj, kanr0, modell, vzgi, farbau, farbin, CONCAT(FGSTWELT, FGSTSPEZ, FGSTTM, FGSTPZ, FGSTMJ, FGSTWK, FGSTLFD) AS VIN from meb_fh01t01
-        |			union all
-        |			select knr, werk, spj, kanr0, modell, vzgi, farbau, farbin, CONCAT(FGSTWELT, FGSTSPEZ, FGSTTM, FGSTPZ, FGSTMJ, FGSTWK, FGSTLFD) AS VIN from cpn_fh01t01
         |			union all
         |			select knr, werk, spj, kanr0, modell, vzgi, farbau, farbin, CONCAT(FGSTWELT, FGSTSPEZ, FGSTTM, FGSTPZ, FGSTMJ, FGSTWK, FGSTLFD) AS VIN from cph_fh01t01
         |			union all
@@ -324,7 +315,6 @@ object mcp_fab_veh_fh01t04_hf {
         |		-- SKD 车辆
         |		    select
         |                case
-        |                    when source_plant = 'PFN' then 'C2'
         |                    when source_plant = 'PFY' then 'C5'
         |                    when source_plant = 'PFC' then 'CS'
         |                    when source_plant in ('PFH1','PFH2') then 'C6'
@@ -341,23 +331,22 @@ object mcp_fab_veh_fh01t04_hf {
         |        and a.werk = d.werk
         |	)p1
         |	left join
-        |	-- M100 之后CPA3总装分产线 区分一线(anlbgr3=IM11)和二线(anlbgr3=IM12)
+        |	-- ZP7 之后CPA3总装分产线 区分一线(anlbgr3=QZ71)和二线(anlbgr3=QZ72)
         |	(
         |		SELECT distinct
         |			werk,
         |			spj,
         |			kanr,
         |			case
-        |				when anlbgr3 = 'IM11' then 'PFA3 L1'
-        |				when anlbgr3 = 'IM12' then 'PFA3 L2'
-        |			end factory,
-        |			'A' status0_s
+        |				when anlbgr3 = 'QZ71' then 'PFA3 L1'
+        |				when anlbgr3 = 'QZ72' then 'PFA3 L2'
+        |			end factory
         |		FROM meb_fh01t04
-        |		WHERE substr(knr1,3,1) != '9' AND status0 = 'M100' and werk = '78' And fanlage2 like '%CP3%'
-        |	) p2 on p1.werk= p2.werk
-        |		and p1.spj = p2.spj
+        |		WHERE substr(knr1,3,1) != '9' AND status0 = 'Z700' and werk = '78' And fanlage2 like '%CP3%'
+        |	) p2 on p1.werk = p2.werk
+        |		and p1.spj  = p2.spj
         |		and p1.kanr = p2.kanr
-        |		and p1.status0_s = p2.status0_s
+        |		and p1.status0_t in ('ZP7','ZP8','Z89X','V900')
         |	left join
         |	-- 工厂作息时间
         |	analytical_db_manual_table.mcp_pf_factory_work_schedule_df p3

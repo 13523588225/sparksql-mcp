@@ -79,8 +79,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |			checkpoint
         |		from
         |		(
-        |			-- Water & Road
-        |			-- CPM CPH CPC CPY
+			  |    -- Water & Road
         |			select
         |				plant,
         |				plant_date,
@@ -91,10 +90,10 @@ object mcp_fab_veh_dlq_detail_hi {
         |				werk,
         |				spj,
         |				kanr,
-        |				BHG,
-        |				HG,
-        |				NVL(BHG,0) + NVL(HG,0) as ZS,
-        |				ROW_NUMBER() over(PARTITION by werk, spj, kanr, plant_date, checkpoint order by capture_time) rn
+        |				NVL(BHG,0) BHG,
+        |				ZS - NVL(BHG,0) AS HG,
+        |				ZS,
+        |				rn
         |			from
         |			(
         |				select
@@ -103,11 +102,15 @@ object mcp_fab_veh_dlq_detail_hi {
         |					capture_time,
         |					-- 雨淋: Water   路试: Road
         |					case
+        |						when plant = 'CPA2' AND check_name = 'AL2PAQ30AROA0000XXXX' then 'Road'
+        |						when plant = 'CPA2' AND check_name = 'AL2PAQ31ARAI0000XXXX' then 'Water'
+        |						when plant = 'CPA3' AND check_name = 'AL3PAQ27B0270000XXXX' then 'Road'
+        |						when plant = 'CPA3' AND check_name = 'AL3PAQ28B0280000XXXX' then 'Water'
         |						when plant = 'CPM' AND check_name = 'E4MPAQ25AROA0000XXXX' then 'Road'
         |						when plant = 'CPM' AND check_name = 'E4MPAQ26ARAI0000XXXX' then 'Water'
-        |						when plant = 'CPH2' AND check_name = 'P2AQ251R060000' and check_value_id in ('2','4') then 'Road'
-        |						when plant = 'CPH2' AND check_name = 'P2AQ261R070000' and check_value_id in ('2','4') then 'Water'
-        |						when plant = 'CPC' AND check_name = 'ALCPAQ26B0260000XXXX' and check_value_id in ('2','4') then 'Road'
+        |						when plant = 'CPH2' AND check_name = 'P2AQ251R060000' then 'Road'
+        |						when plant = 'CPH2' AND check_name = 'P2AQ261R070000' then 'Water'
+        |						when plant = 'CPC' AND check_name = 'ALCPAQ26B0260000XXXX' then 'Road'
         |						when plant = 'CPC' AND check_name = 'ALCPAQ27B0270000XXXX' then 'Water'
         |						when plant = 'CPY' AND check_name = 'ALCPAQ27B0270000XXXX' then 'Road'
         |						when plant = 'CPY' AND check_name = 'ALCPAQ28B0280000XXXX' then 'Water'
@@ -117,12 +120,77 @@ object mcp_fab_veh_dlq_detail_hi {
         |					werk,
         |					spj,
         |					kanr,
-        |					case when check_value_id = '4' then 1 end BHG,
-        |					case when check_value_id <> '4' then 1 end HG
+        |					0 BHG,
+        |					1 ZS,
+        |					ROW_NUMBER() over(PARTITION by werk, spj, kanr, plant_date, plant, check_name order by capture_time) rn
         |				from mcp.mcp_fab_veh_fh04ta06_check_hi
-        |				where plant IN ('CPM','CPH2','CPC','CPY')
+        |				where plant IN ('CPM','CPH2','CPC','CPY','CPA2','CPA3')
+        |				and check_value_id not in ('3','5')
+        |				and plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 1 * 24 * 60 * 60, 'yyyy-MM-dd')
+        |				and case
+        |						when plant = 'CPA2' AND check_name = 'AL2PAQ30AROA0000XXXX' then 'Road'
+        |						when plant = 'CPA2' AND check_name = 'AL2PAQ31ARAI0000XXXX' then 'Water'
+        |						when plant = 'CPA3' AND check_name = 'AL3PAQ27B0270000XXXX' then 'Road'
+        |						when plant = 'CPA3' AND check_name = 'AL3PAQ28B0280000XXXX' then 'Water'
+        |						when plant = 'CPM' AND check_name = 'E4MPAQ25AROA0000XXXX' then 'Road'
+        |						when plant = 'CPM' AND check_name = 'E4MPAQ26ARAI0000XXXX' then 'Water'
+        |						when plant = 'CPH2' AND check_name = 'P2AQ251R060000' then 'Road'
+        |						when plant = 'CPH2' AND check_name = 'P2AQ261R070000' then 'Water'
+        |						when plant = 'CPC' AND check_name = 'ALCPAQ26B0260000XXXX' then 'Road'
+        |						when plant = 'CPC' AND check_name = 'ALCPAQ27B0270000XXXX' then 'Water'
+        |						when plant = 'CPY' AND check_name = 'ALCPAQ27B0270000XXXX' then 'Road'
+        |						when plant = 'CPY' AND check_name = 'ALCPAQ28B0280000XXXX' then 'Water'
+        |					end is not null
+        |				union all
+        |				-- 不合格车辆
+        |				select
+        |					plant,
+        |					plant_date,
+        |					capture_time,
+        |					-- 雨淋: Water   路试: Road
+        |					case
+        |						when plant = 'CPA2' AND check_name = 'AL2PAQ30AROA0000XXXX' then 'Road'
+        |						when plant = 'CPA2' AND check_name = 'AL2PAQ31ARAI0000XXXX' then 'Water'
+        |						when plant = 'CPA3' AND check_name = 'AL3PAQ27B0270000XXXX' then 'Road'
+        |						when plant = 'CPA3' AND check_name = 'AL3PAQ28B0280000XXXX' then 'Water'
+        |						when plant = 'CPM' AND check_name = 'E4MPAQ25AROA0000XXXX' then 'Road'
+        |						when plant = 'CPM' AND check_name = 'E4MPAQ26ARAI0000XXXX' then 'Water'
+        |						when plant = 'CPH2' AND check_name = 'P2AQ251R060000' then 'Road'
+        |						when plant = 'CPH2' AND check_name = 'P2AQ261R070000' then 'Water'
+        |						when plant = 'CPC' AND check_name = 'ALCPAQ26B0260000XXXX' then 'Road'
+        |						when plant = 'CPC' AND check_name = 'ALCPAQ27B0270000XXXX' then 'Water'
+        |						when plant = 'CPY' AND check_name = 'ALCPAQ27B0270000XXXX' then 'Road'
+        |						when plant = 'CPY' AND check_name = 'ALCPAQ28B0280000XXXX' then 'Water'
+        |					end as checkpoint,
+        |					modell series_code_6,
+        |					series_name_6,
+        |					werk,
+        |					spj,
+        |					kanr,
+        |					1 BHG,
+        |					0 ZS,
+        |					ROW_NUMBER() over(PARTITION by werk, spj, kanr, plant_date, plant, check_name order by capture_time) rn
+        |				from mcp.mcp_fab_veh_fh04ta06_check_hi
+        |				where plant IN ('CPM','CPH2','CPC','CPY','CPA2','CPA3')
+        |				and plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 1 * 24 * 60 * 60, 'yyyy-MM-dd')
+        |				and check_value_id = '4'
+        |				and case
+        |						when plant = 'CPA2' AND check_name = 'AL2PAQ30AROA0000XXXX' then 'Road'
+        |						when plant = 'CPA2' AND check_name = 'AL2PAQ31ARAI0000XXXX' then 'Water'
+        |						when plant = 'CPA3' AND check_name = 'AL3PAQ27B0270000XXXX' then 'Road'
+        |						when plant = 'CPA3' AND check_name = 'AL3PAQ28B0280000XXXX' then 'Water'
+        |						when plant = 'CPM' AND check_name = 'E4MPAQ25AROA0000XXXX' then 'Road'
+        |						when plant = 'CPM' AND check_name = 'E4MPAQ26ARAI0000XXXX' then 'Water'
+        |						when plant = 'CPH2' AND check_name = 'P2AQ251R060000' then 'Road'
+        |						when plant = 'CPH2' AND check_name = 'P2AQ261R070000' then 'Water'
+        |						when plant = 'CPC' AND check_name = 'ALCPAQ26B0260000XXXX' then 'Road'
+        |						when plant = 'CPC' AND check_name = 'ALCPAQ27B0270000XXXX' then 'Water'
+        |						when plant = 'CPY' AND check_name = 'ALCPAQ27B0270000XXXX' then 'Road'
+        |						when plant = 'CPY' AND check_name = 'ALCPAQ28B0280000XXXX' then 'Water'
+        |					end is not null
         |			) t
         |			where checkpoint is not null
+        |			and rn = 1
         |			union all
         |			-- VP1 & VP2
         |			-- CPA2 CPA3 CPM CPY CPH1 CPH2 CPC
@@ -591,7 +659,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |						mcp.mcp_fab_veh_result_info_hi
         |					where
         |						Result_value_id = '10'
-        |						and plant in ('CPM','CPH2','CPC','CPY')
+        |						and plant in ('CPA3','CPM','CPH2','CPC','CPY')
         |						and (substr(Result_name,-3) in ('258', '259', '701') or substr(Result_name,-4)= '2813')
         |				)b on a.werk = b.werk
         |					and a.spj = b.spj
@@ -620,7 +688,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |					from mcp.mcp_fab_veh_result_info_hi
         |					where
         |						Result_value_id = '13'
-        |						and plant in ('CPM','CPH2','CPC','CPY')
+        |						and plant in ('CPA3','CPM','CPH2','CPC','CPY')
         |						and (substr(Result_name,-3) in ('258', '259', '701') or substr(Result_name,-4)= '2813')
         |				) ta WHERE RN = 1
         |			) t
@@ -750,7 +818,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |			(
         |				select * from mcp.mcp_fab_veh_fh01t04_hf
         |				where status0 = 'Z700'
-        |				and plant IN ('CPM','CPH2','CPC','CPY')
+        |				and plant IN ('CPA3','CPM','CPH2','CPC','CPY')
         |				and cal_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 1 * 24 * 60 * 60, 'yyyy-MM-dd')
         |				and rn = 1
         |			) a
