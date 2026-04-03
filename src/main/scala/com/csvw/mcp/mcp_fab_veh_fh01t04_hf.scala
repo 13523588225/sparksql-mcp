@@ -145,8 +145,8 @@ object mcp_fab_veh_fh01t04_hf {
         |		end factory,  				 						   -- 工厂名称(物流报表) PF开头
         |		case
         |			when p1.mdatumzeit >= concat(p1.mdatum,' ', p3.start_time)
-        |				and p1.mdatumzeit < concat(from_unixtime(unix_timestamp(p1.mdatum) + 86400, 'yyyy-MM-dd'),' ', p3.end_time) then p1.mdatum
-        |			else from_unixtime(unix_timestamp(p1.mdatum) - 86400, 'yyyy-MM-dd')
+        |				and p1.mdatumzeit < concat(from_unixtime(unix_timestamp(p1.mdatum,'yyyy-MM-dd') + 86400, 'yyyy-MM-dd'),' ', p3.end_time) then p1.mdatum
+        |			else from_unixtime(unix_timestamp(p1.mdatum,'yyyy-MM-dd') - 86400, 'yyyy-MM-dd')
         |		end cal_date,                                           -- 工厂日期
         |		p3.start_time,
         |		p3.end_time

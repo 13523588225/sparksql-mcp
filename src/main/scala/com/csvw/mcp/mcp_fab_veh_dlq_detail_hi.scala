@@ -126,7 +126,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |				from mcp.mcp_fab_veh_fh04ta06_check_hi
         |				where plant IN ('CPM','CPH2','CPC','CPY','CPA2','CPA3')
         |				and check_value_id not in ('3','5')
-        |				and plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 1 * 24 * 60 * 60, 'yyyy-MM-dd')
+        |				and plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 31 * 24 * 60 * 60, 'yyyy-MM-dd')
         |				and case
         |						when plant = 'CPA2' AND check_name = 'AL2PAQ30AROA0000XXXX' then 'Road'
         |						when plant = 'CPA2' AND check_name = 'AL2PAQ31ARAI0000XXXX' then 'Water'
@@ -172,7 +172,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |					ROW_NUMBER() over(PARTITION by werk, spj, kanr, plant_date, plant, check_name order by capture_time) rn
         |				from mcp.mcp_fab_veh_fh04ta06_check_hi
         |				where plant IN ('CPM','CPH2','CPC','CPY','CPA2','CPA3')
-        |				and plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 1 * 24 * 60 * 60, 'yyyy-MM-dd')
+        |				and plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 31 * 24 * 60 * 60, 'yyyy-MM-dd')
         |				and check_value_id = '4'
         |				and case
         |						when plant = 'CPA2' AND check_name = 'AL2PAQ30AROA0000XXXX' then 'Road'
