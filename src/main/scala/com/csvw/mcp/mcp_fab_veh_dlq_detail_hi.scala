@@ -122,7 +122,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |					kanr,
         |					0 BHG,
         |					1 ZS,
-        |					ROW_NUMBER() over(PARTITION by werk, spj, kanr, plant_date, plant, check_name order by capture_time) rn
+        |					ROW_NUMBER() over(PARTITION by werk, spj, kanr, plant, check_name order by capture_time) rn
         |				from mcp.mcp_fab_veh_fh04ta06_check_hi
         |				where plant IN ('CPM','CPH2','CPC','CPY','CPA2','CPA3')
         |				and check_value_id not in ('3','5')
@@ -169,7 +169,7 @@ object mcp_fab_veh_dlq_detail_hi {
         |					kanr,
         |					1 BHG,
         |					0 ZS,
-        |					ROW_NUMBER() over(PARTITION by werk, spj, kanr, plant_date, plant, check_name order by capture_time) rn
+        |					ROW_NUMBER() over(PARTITION by werk, spj, kanr, plant, check_name order by capture_time) rn
         |				from mcp.mcp_fab_veh_fh04ta06_check_hi
         |				where plant IN ('CPM','CPH2','CPC','CPY','CPA2','CPA3')
         |				and plant_date >= from_unixtime(unix_timestamp('${bizdate}','yyyyMMdd') - 31 * 24 * 60 * 60, 'yyyy-MM-dd')
